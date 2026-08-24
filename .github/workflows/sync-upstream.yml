@@ -1,0 +1,44 @@
+name: Sync upstream
+
+# Keeps this fork's main fast-moving with Qbox-project/qbx_core without
+# manual "sync fork" clicks. Uses fetch+merge rather than the GitHub
+# "sync fork" button (or `gh repo sync`), because that only fast-forwards --
+# it refuses the moment this fork carries its own commits (gphone_* tables,
+# npwd config removal, etc.), which is the whole point of forking.
+#
+# On a real conflict this aborts and fails loudly rather than guessing --
+# check the failed run and resolve by hand:
+#   git remote add upstream https://github.com/Qbox-project/qbx_core.git
+#   git fetch upstream main && git merge upstream/main
+on:
+  schedule:
+    - cron: "0 6 * * *" # daily, 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/Qbox-project/qbx_core.git
+          git fetch upstream main
+
+      - name: Merge upstream into main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git merge upstream/main --no-edit; then
+            git push origin main
+          else
+            echo "::error::Merge conflict syncing upstream/main -- resolve manually, see workflow comment for the commands"
+            git merge --abort
+            exit 1
+          fi

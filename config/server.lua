@@ -68,16 +68,11 @@ return {
         {'player_vehicles', 'citizenid'},
         {'player_groups', 'citizenid'},
         {'players', 'citizenid'},
-        {'npwd_calls', 'identifier'},
-        {'npwd_darkchat_channel_members', 'user_identifier'},
-        {'npwd_marketplace_listings', 'identifier'},
-        {'npwd_messages_participants', 'participant'},
-        {'npwd_notes', 'identifier'},
-        {'npwd_phone_contacts', 'identifier'},
-        {'npwd_phone_gallery', 'identifier'},
-        {'npwd_twitter_profiles', 'identifier'},
-        {'npwd_match_profiles', 'identifier'},
-    }, -- Rows to be deleted when the character is deleted
+    }, -- Rows to be deleted when the character is deleted.
+    -- gPhone (server-data/vendor/gPhone) is not listed here: its tables
+    -- carry real `ON DELETE CASCADE` foreign keys to players.citizenid, so
+    -- the database already guarantees no orphaned rows without this list's
+    -- help. npwd_* removed outright -- this server runs gPhone, not npwd.
 
     server = {
         pvp = true, -- Enable or disable pvp on the server (Ability to shoot other players)

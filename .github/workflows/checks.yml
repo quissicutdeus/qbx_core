@@ -1,0 +1,49 @@
+name: Checks
+
+# Deliberately not on pull_request_target, and deliberately without a paths
+# filter. Both jobs take seconds, and a filter would mean "did not run" and
+# "passed" look identical in the checks list.
+on:
+  push:
+  pull_request:
+
+jobs:
+  actionlint:
+    name: Workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Catches what YAML syntax alone does not: undefined ${{ }} properties,
+      # malformed `uses:` refs, bad runner labels, and shellcheck over the
+      # `run:` blocks -- sync-upstream.yml is real shell.
+      - uses: docker://rhysd/actionlint:1.7.12
+
+  json:
+    name: JSON
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # A malformed locale is invisible until someone plays in that language,
+      # which is exactly the kind of break worth spending CI seconds on.
+      #
+      # .vscode is excluded on purpose: those files are JSONC, and
+      # extensions.json carries a trailing comma that VS Code accepts and a
+      # strict parser does not.
+      - name: Validate JSON
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(git ls-files '*.json' | grep -v '^\.vscode/')
+          # A glob that matches nothing must not read as a pass.
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::no JSON files found -- the check is not looking where it should be"
+            exit 1
+          fi
+          rc=0
+          for f in "${files[@]}"; do
+            if ! python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$f"; then
+              echo "::error file=$f::invalid JSON"
+              rc=1
+            fi
+          done
+          echo "checked ${#files[@]} JSON files"
+          exit $rc

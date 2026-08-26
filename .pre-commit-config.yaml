@@ -1,0 +1,35 @@
+# Local half of the gates in .github/workflows/checks.yml. CI remains the
+# authority -- it sees every file, this only sees what you staged.
+#
+# Not installed by default. Opt in per clone with `pre-commit install`. If that
+# refuses because core.hooksPath is set globally, install it without disturbing
+# that setting:
+#     GIT_CONFIG_GLOBAL=/dev/null pre-commit install
+#
+# Deliberately NOT here:
+#
+#   luacheck  the 55 Lua files are linted in CI by fivem-lua-lint-action, which
+#             generates its ox_lib/qbox definitions inside its own image at
+#             build time. The published base image does not carry them, so a
+#             local run would report every FiveM native as an undefined global.
+#
+#   end-of-file-fixer, trailing-whitespace
+#             they would rewrite 28 tracked files, nearly all of them upstream.
+#             This fork merges Qbox-project/qbx_core on a schedule, so anything
+#             that reformats upstream files buys a conflict every sync. Nothing
+#             here edits a file.
+repos:
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint-docker
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-json
+        # .vscode holds JSONC: extensions.json carries a trailing comma that
+        # VS Code accepts and a strict parser does not.
+        exclude: ^\.vscode/
+      - id: check-yaml
+      - id: check-merge-conflict

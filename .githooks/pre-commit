@@ -1,0 +1,25 @@
+#!/bin/sh
+# Checked in so a fresh clone is gated without anyone remembering to run
+# `pre-commit install`. Found by the global dispatcher at core.hooksPath, which
+# tries .githooks/<hook> before .git/hooks/<hook>; with no such dispatcher, point
+# git at this directory directly:
+#
+#     git config core.hooksPath .githooks
+#
+# Because the dispatcher execs the FIRST match, this file shadows any
+# .git/hooks/pre-commit. That is fine here -- pre-commit is the only thing that
+# writes one -- but it is why a repo whose hooks come from husky or
+# simple-git-hooks should not be given a file like this.
+#
+# The gates themselves live in .pre-commit-config.yaml, one definition shared
+# with the lint job in CI.
+
+if ! command -v pre-commit >/dev/null 2>&1; then
+    # Deliberately not fatal: CI runs the same config on every push and PR, so
+    # a missing tool costs you early warning, not the check itself.
+    echo "pre-commit: not installed, skipping local checks (CI still runs them)." >&2
+    echo "  install it with:  paru -S pre-commit" >&2
+    exit 0
+fi
+
+exec pre-commit run --hook-stage pre-commit

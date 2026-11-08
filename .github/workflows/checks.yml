@@ -47,3 +47,37 @@ jobs:
           done
           echo "checked ${#files[@]} JSON files"
           exit $rc
+
+  upstream:
+    name: Upstream sync
+    # Only main is kept in sync; a feature branch cut a week ago is
+    # legitimately behind and should not fail for it.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Catches sync-upstream.yml going quiet. A dead schedule produces no run
+      # and therefore no failure -- between Sep 4 and Nov 8 2026 it simply
+      # stopped firing while GitHub still listed it as active. This check
+      # lives here, on push, precisely so it does not depend on that scheduler.
+      - name: Fail if upstream commits have gone unmerged
+        env:
+          MAX_AGE_DAYS: 3
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/Qbox-project/qbx_core.git
+          git fetch --quiet upstream main
+          oldest=$(git log --format=%ct upstream/main --not HEAD | tail -n 1)
+          if [ -z "$oldest" ]; then
+            echo "main contains all of upstream/main"
+            exit 0
+          fi
+          count=$(git rev-list --count HEAD..upstream/main)
+          age_days=$(( ($(date +%s) - oldest) / 86400 ))
+          echo "main is $count commit(s) behind upstream/main; the oldest is $age_days day(s) old"
+          if [ "$age_days" -gt "$MAX_AGE_DAYS" ]; then
+            echo "::error::main is $count commit(s) behind upstream/main and the oldest is $age_days days old -- sync-upstream.yml is not running or not succeeding; check its run history"
+            exit 1
+          fi

@@ -12,7 +12,7 @@ jobs:
     name: Workflows
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Catches what YAML syntax alone does not: undefined ${{ }} properties,
       # malformed `uses:` refs, bad runner labels, and shellcheck over the
       # `run:` blocks -- sync-upstream.yml is real shell.
@@ -22,7 +22,7 @@ jobs:
     name: JSON
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # A malformed locale is invisible until someone plays in that language,
       # which is exactly the kind of break worth spending CI seconds on.
       #
@@ -55,7 +55,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       # Catches sync-upstream.yml going quiet. A dead schedule produces no run
